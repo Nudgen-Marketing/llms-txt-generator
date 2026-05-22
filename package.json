@@ -17,7 +17,9 @@
     "package:chrome": "npm run build:chrome && node scripts/package-extensions.mjs --target=chrome",
     "package:all": "npm run build:all && node scripts/package-extensions.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "echo \"No tests specified\" && exit 0",
+    "validate:artifacts": "node scripts/validate-extension-package.mjs artifacts/*.zip"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.38",
