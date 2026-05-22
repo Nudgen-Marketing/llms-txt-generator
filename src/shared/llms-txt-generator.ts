@@ -1,6 +1,6 @@
 import { validatePublicHttpUrl } from "./url-validation";
 
-const MAX_HTML_PAGES = 8;
+const MAX_HTML_PAGES = 20;
 const MAX_SITEMAP_INDEX_CHILDREN = 8;
 const MAX_TEXT_CHARS = 120_000;
 const FETCH_TIMEOUT_MS = 8_000;
@@ -55,7 +55,9 @@ type FetchTextResult = {
 
 export function normalizeLlmsGeneratorUrl(rawUrl: string): string {
   const trimmed = rawUrl.trim();
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
   const validation = validatePublicHttpUrl(withProtocol);
   if (!validation.isValid) {
     throw new Error(validation.error || "Enter a valid public website URL.");
@@ -69,7 +71,15 @@ export function normalizeLlmsGeneratorUrl(rawUrl: string): string {
 export async function generateLlmsTxtFiles(
   rawUrl: string,
   fetchImpl: FetchLike = fetch,
-  onProgress?: (phase: "checking-existing" | "checking-sitemap" | "crawling" | "formatting" | "complete", pagesScanned: number) => void,
+  onProgress?: (
+    phase:
+      | "checking-existing"
+      | "checking-sitemap"
+      | "crawling"
+      | "formatting"
+      | "complete",
+    pagesScanned: number,
+  ) => void,
 ): Promise<LlmsTxtGeneratorResult> {
   const normalizedUrl = normalizeLlmsGeneratorUrl(rawUrl);
   const parsedUrl = new URL(normalizedUrl);
@@ -102,14 +112,24 @@ export async function generateLlmsTxtFiles(
   });
 
   if (state.pages.length === 0) {
-    throw new Error("We could not read any public HTML pages from this website. Try a reachable homepage URL.");
+    throw new Error(
+      "We could not read any public HTML pages from this website. Try a reachable homepage URL.",
+    );
   }
 
   if (onProgress) onProgress("formatting", state.pages.length);
   const siteName = inferSiteName(state);
   const canonicalRootUrl = getCanonicalRootUrl(state);
-  const llmsTxt = buildLlmsTxt({ ...state, rootUrl: canonicalRootUrl, siteName });
-  const llmsFullTxt = buildLlmsFullTxt({ ...state, rootUrl: canonicalRootUrl, siteName });
+  const llmsTxt = buildLlmsTxt({
+    ...state,
+    rootUrl: canonicalRootUrl,
+    siteName,
+  });
+  const llmsFullTxt = buildLlmsFullTxt({
+    ...state,
+    rootUrl: canonicalRootUrl,
+    siteName,
+  });
 
   if (onProgress) onProgress("complete", state.pages.length);
 
@@ -127,15 +147,29 @@ export async function generateLlmsTxtFiles(
 }
 
 async function inspectExistingFiles(state: CrawlState, fetchImpl: FetchLike) {
-  state.existingFiles.llmsTxt = await inspectFileStatus(new URL("/llms.txt", state.rootUrl), fetchImpl);
-  state.existingFiles.llmsFullTxt = await inspectFileStatus(new URL("/llms-full.txt", state.rootUrl), fetchImpl);
-  const robotsStatus = await inspectFileStatus(new URL("/robots.txt", state.rootUrl), fetchImpl);
+  state.existingFiles.llmsTxt = await inspectFileStatus(
+    new URL("/llms.txt", state.rootUrl),
+    fetchImpl,
+  );
+  state.existingFiles.llmsFullTxt = await inspectFileStatus(
+    new URL("/llms-full.txt", state.rootUrl),
+    fetchImpl,
+  );
+  const robotsStatus = await inspectFileStatus(
+    new URL("/robots.txt", state.rootUrl),
+    fetchImpl,
+  );
   state.robotsFound = robotsStatus === "found";
 }
 
-async function inspectFileStatus(url: URL, fetchImpl: FetchLike): Promise<ExistingFileStatus> {
+async function inspectFileStatus(
+  url: URL,
+  fetchImpl: FetchLike,
+): Promise<ExistingFileStatus> {
   try {
-    const response = await fetchText(url.toString(), fetchImpl, { htmlOnly: false });
+    const response = await fetchText(url.toString(), fetchImpl, {
+      htmlOnly: false,
+    });
     if (response.ok) return "found";
     if (response.status === 404) return "missing";
     return "error";
@@ -146,33 +180,57 @@ async function inspectFileStatus(url: URL, fetchImpl: FetchLike): Promise<Existi
 
 async function inspectSitemap(state: CrawlState, fetchImpl: FetchLike) {
   try {
-    const response = await fetchText(new URL("/sitemap.xml", state.rootUrl).toString(), fetchImpl, { htmlOnly: false });
+    const response = await fetchText(
+      new URL("/sitemap.xml", state.rootUrl).toString(),
+      fetchImpl,
+      { htmlOnly: false },
+    );
     if (!response.ok) return;
     state.sitemapFound = true;
-    state.sitemapUrls = (await extractSitemapDocumentUrls(response, state, fetchImpl)).slice(0, 30);
+    state.sitemapUrls = (
+      await extractSitemapDocumentUrls(response, state, fetchImpl)
+    ).slice(0, 30);
   } catch {
-    state.warnings.push("Sitemap could not be read, so the generator used homepage links instead.");
+    state.warnings.push(
+      "Sitemap could not be read, so the generator used homepage links instead.",
+    );
   }
 }
 
-async function extractSitemapDocumentUrls(response: FetchTextResult, state: CrawlState, fetchImpl: FetchLike) {
+async function extractSitemapDocumentUrls(
+  response: FetchTextResult,
+  state: CrawlState,
+  fetchImpl: FetchLike,
+) {
   if (!isXmlLikeResponse(response)) {
-    state.warnings.push("Sitemap did not return XML, so the generator used homepage links instead.");
+    state.warnings.push(
+      "Sitemap did not return XML, so the generator used homepage links instead.",
+    );
     return [];
   }
 
   if (!isSitemapIndex(response.text)) {
-    return extractSitemapUrls(response.text, state).filter((url) => !isLikelySitemapUrl(url));
+    return extractSitemapUrls(response.text, state).filter(
+      (url) => !isLikelySitemapUrl(url),
+    );
   }
 
   const pageUrls: string[] = [];
-  const childSitemaps = extractSitemapUrls(response.text, state).filter(isLikelySitemapUrl).slice(0, MAX_SITEMAP_INDEX_CHILDREN);
+  const childSitemaps = extractSitemapUrls(response.text, state)
+    .filter(isLikelySitemapUrl)
+    .slice(0, MAX_SITEMAP_INDEX_CHILDREN);
   let unusableChildren = 0;
 
   for (const sitemapUrl of childSitemaps) {
     try {
-      const childResponse = await fetchText(sitemapUrl, fetchImpl, { htmlOnly: false });
-      if (!childResponse.ok || !isXmlLikeResponse(childResponse) || isSitemapIndex(childResponse.text)) {
+      const childResponse = await fetchText(sitemapUrl, fetchImpl, {
+        htmlOnly: false,
+      });
+      if (
+        !childResponse.ok ||
+        !isXmlLikeResponse(childResponse) ||
+        isSitemapIndex(childResponse.text)
+      ) {
         unusableChildren += 1;
         continue;
       }
@@ -187,13 +245,19 @@ async function extractSitemapDocumentUrls(response: FetchTextResult, state: Craw
   }
 
   if (unusableChildren > 0) {
-    state.warnings.push(`${unusableChildren} sitemap index entries could not be used as page inventory.`);
+    state.warnings.push(
+      `${unusableChildren} sitemap index entries could not be used as page inventory.`,
+    );
   }
 
   return pageUrls;
 }
 
-async function crawlHtmlPages(state: CrawlState, fetchImpl: FetchLike, onPageScanned?: (count: number) => void) {
+async function crawlHtmlPages(
+  state: CrawlState,
+  fetchImpl: FetchLike,
+  onPageScanned?: (count: number) => void,
+) {
   const queue = getInitialPageQueue(state);
   const visited = new Set<string>();
   const visitedPages = new Set<string>();
@@ -221,7 +285,10 @@ async function crawlHtmlPages(state: CrawlState, fetchImpl: FetchLike, onPageSca
       const page = extractPageMetadata(response.text, response.url);
       const canonicalPageUrl = canonicalizePageUrl(response.url);
       const pageFingerprint = getPageContentFingerprint(page);
-      if (visitedPages.has(canonicalPageUrl) || contentFingerprints.has(pageFingerprint)) {
+      if (
+        visitedPages.has(canonicalPageUrl) ||
+        contentFingerprints.has(pageFingerprint)
+      ) {
         continue;
       }
       visitedPages.add(canonicalPageUrl);
@@ -277,19 +344,26 @@ async function fetchText(
       signal: controller.signal,
       headers: {
         // User-agent modification is forbidden in standard browser fetch, so we let the browser handle it.
-        accept: options.htmlOnly ? "text/html,application/xhtml+xml" : "text/plain,text/html,application/xml,text/xml,*/*",
+        accept: options.htmlOnly
+          ? "text/html,application/xhtml+xml"
+          : "text/plain,text/html,application/xml,text/xml,*/*",
       },
     });
 
     if (isRedirect(response.status) && redirectsLeft > 0) {
       const location = response.headers.get("location");
-      if (!location) throw new Error("Redirect response did not include a location.");
+      if (!location)
+        throw new Error("Redirect response did not include a location.");
       const redirectedUrl = new URL(location, url).toString();
       return fetchText(redirectedUrl, fetchImpl, options, redirectsLeft - 1);
     }
 
     const contentType = response.headers.get("content-type") || "";
-    if (options.htmlOnly && contentType && !/\b(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType)) {
+    if (
+      options.htmlOnly &&
+      contentType &&
+      !/\b(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType)
+    ) {
       return { status: response.status, ok: false, url, contentType, text: "" };
     }
 
@@ -314,7 +388,11 @@ function extractSitemapUrls(xml: string, state: CrawlState) {
   const urls: string[] = [];
   for (const match of xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
     const candidate = decodeHtmlEntities(match[1] || "").trim();
-    const normalized = normalizeSameOriginCandidate(candidate, state.rootUrl, state.allowedOrigins);
+    const normalized = normalizeSameOriginCandidate(
+      candidate,
+      state.rootUrl,
+      state.allowedOrigins,
+    );
     if (normalized && !isAllowedOrigin(new URL(normalized), state)) continue;
     if (normalized && !urls.includes(normalized)) urls.push(normalized);
   }
@@ -326,7 +404,11 @@ function isSitemapIndex(xml: string) {
 }
 
 function isXmlLikeResponse(response: FetchTextResult) {
-  return /\b(?:application|text)\/(?:xml|xhtml\+xml)\b/i.test(response.contentType) || /<\?xml|<urlset\b|<sitemapindex\b/i.test(response.text);
+  return (
+    /\b(?:application|text)\/(?:xml|xhtml\+xml)\b/i.test(
+      response.contentType,
+    ) || /<\?xml|<urlset\b|<sitemapindex\b/i.test(response.text)
+  );
 }
 
 function isLikelySitemapUrl(url: string) {
@@ -336,18 +418,32 @@ function isLikelySitemapUrl(url: string) {
 
 function extractSameOriginLinks(html: string, baseUrl: URL) {
   const links: string[] = [];
-  for (const match of stripScriptAndStyle(html).matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)) {
-    const normalized = normalizeSameOriginCandidate(decodeHtmlEntities(match[1] || ""), baseUrl);
+  for (const match of stripScriptAndStyle(html).matchAll(
+    /<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi,
+  )) {
+    const normalized = normalizeSameOriginCandidate(
+      decodeHtmlEntities(match[1] || ""),
+      baseUrl,
+    );
     if (!normalized || links.includes(normalized)) continue;
     if (isLikelyDocumentUrl(normalized)) links.push(normalized);
   }
   return links;
 }
 
-function normalizeSameOriginCandidate(rawUrl: string, baseUrl: URL, allowedOrigins: Set<string> = new Set([baseUrl.origin])) {
+function normalizeSameOriginCandidate(
+  rawUrl: string,
+  baseUrl: URL,
+  allowedOrigins: Set<string> = new Set([baseUrl.origin]),
+) {
   try {
     const cleanUrl = rawUrl.replace(/\\\//g, "/").trim();
-    if (!cleanUrl || cleanUrl.startsWith("#") || /^mailto:|^tel:|^javascript:/i.test(cleanUrl)) return null;
+    if (
+      !cleanUrl ||
+      cleanUrl.startsWith("#") ||
+      /^mailto:|^tel:|^javascript:/i.test(cleanUrl)
+    )
+      return null;
     const parsed = new URL(cleanUrl, baseUrl);
     parsed.hash = "";
     if (!allowedOrigins.has(parsed.origin)) return null;
@@ -375,7 +471,9 @@ function canonicalizePageUrl(rawUrl: string) {
 }
 
 function isTrackingQueryParam(key: string) {
-  return /^(?:utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|mc_cid$|mc_eid$|mkt_tok$|ref$|ref_src$|spm$|yclid$)/i.test(key);
+  return /^(?:utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|mc_cid$|mc_eid$|mkt_tok$|ref$|ref_src$|spm$|yclid$)/i.test(
+    key,
+  );
 }
 
 function getPageContentFingerprint(page: LlmsTxtPage) {
@@ -389,7 +487,9 @@ function normalizeFingerprintText(value: string) {
 function buildAllowedOrigins(rootUrl: URL) {
   const origins = new Set<string>([rootUrl.origin]);
   const hostname = rootUrl.hostname;
-  const pairedHostname = hostname.startsWith("www.") ? hostname.replace(/^www\./, "") : `www.${hostname}`;
+  const pairedHostname = hostname.startsWith("www.")
+    ? hostname.replace(/^www\./, "")
+    : `www.${hostname}`;
   try {
     const paired = new URL(rootUrl.toString());
     paired.hostname = pairedHostname;
@@ -415,11 +515,17 @@ function getCanonicalRootUrl(state: CrawlState) {
 
 function isLikelyDocumentUrl(url: string) {
   const pathname = new URL(url).pathname.toLowerCase();
-  return !/\.(?:png|jpe?g|gif|webp|svg|ico|css|js|json|pdf|zip|mp4|mov|avi|mp3|woff2?|ttf|eot)$/i.test(pathname);
+  return !/\.(?:png|jpe?g|gif|webp|svg|ico|css|js|json|pdf|zip|mp4|mov|avi|mp3|woff2?|ttf|eot)$/i.test(
+    pathname,
+  );
 }
 
 function extractPageMetadata(html: string, url: string): LlmsTxtPage {
-  const title = normalizeText(getTagText(html, "title") || getMetaContent(html, "og:title") || new URL(url).hostname);
+  const title = normalizeText(
+    getTagText(html, "title") ||
+      getMetaContent(html, "og:title") ||
+      new URL(url).hostname,
+  );
   const description = normalizeText(
     getMetaContent(html, "description") ||
       getMetaContent(html, "og:description") ||
@@ -448,7 +554,9 @@ function extractHeadings(html: string) {
 
 // Simple browser-safe string utilities
 function getTagText(html: string, tag: string) {
-  const match = html.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
+  const match = html.match(
+    new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"),
+  );
   return match?.[1] ? stripTags(match[1]) : "";
 }
 
@@ -474,7 +582,9 @@ function stripTags(value: string) {
 }
 
 function stripScriptAndStyle(value: string) {
-  return value.replace(/<script\b[\s\S]*?<\/script>/gi, " ").replace(/<style\b[\s\S]*?<\/style>/gi, " ");
+  return value
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ");
 }
 
 function normalizeText(value: string) {
@@ -504,12 +614,17 @@ function inferSiteName(state: CrawlState) {
 
 function buildLlmsTxt(state: CrawlState & { siteName: string }) {
   const home = state.pages[0];
-  const overview = home?.description || `Official website for ${state.siteName}.`;
+  const overview =
+    home?.description || `Official website for ${state.siteName}.`;
   const keyPages = getCuratedKeyPages(state.pages);
-  const optionalPages = state.pages.filter((page) => !keyPages.includes(page)).slice(0, 6);
+  const optionalPages = state.pages
+    .filter((page) => !keyPages.includes(page))
+    .slice(0, 6);
   const sitemapUrl = new URL("/sitemap.xml", state.rootUrl).toString();
   const optionalSection =
-    optionalPages.length > 0 ? `\n## Optional\n\n${optionalPages.map(formatLlmsLink).join("\n")}\n` : "";
+    optionalPages.length > 0
+      ? `\n## Optional\n\n${optionalPages.map(formatLlmsLink).join("\n")}\n`
+      : "";
 
   return cleanMarkdown(`# ${state.siteName}
  
@@ -538,20 +653,29 @@ ${state.robotsFound ? `- [Robots policy](${new URL("/robots.txt", state.rootUrl)
 
 function getCuratedKeyPages(pages: LlmsTxtPage[]) {
   const home = pages[0];
-  const stablePages = pages.filter((page) => page !== home && isStableOverviewPage(page.url));
-  const fallbackPages = pages.filter((page) => page !== home && !stablePages.includes(page));
+  const stablePages = pages.filter(
+    (page) => page !== home && isStableOverviewPage(page.url),
+  );
+  const fallbackPages = pages.filter(
+    (page) => page !== home && !stablePages.includes(page),
+  );
   return [home, ...stablePages, ...fallbackPages].filter(Boolean).slice(0, 6);
 }
 
 function isStableOverviewPage(url: string) {
-  const pathname = new URL(url).pathname.toLowerCase().replace(/\/+$/g, "") || "/";
+  const pathname =
+    new URL(url).pathname.toLowerCase().replace(/\/+$/g, "") || "/";
   if (pathname === "/") return true;
   if (isLikelyDetailPage(pathname)) return false;
-  return /(?:^|\/)(about|blog|categories?|company|contact|docs?|documentation|features?|help|news|polic(?:y|ies)|pricing|privacy|products?|resources?|services?|support|terms)(?:\/|$)/i.test(pathname);
+  return /(?:^|\/)(about|blog|categories?|company|contact|docs?|documentation|features?|help|news|polic(?:y|ies)|pricing|privacy|products?|resources?|services?|support|terms)(?:\/|$)/i.test(
+    pathname,
+  );
 }
 
 function isLikelyDetailPage(pathname: string) {
-  return /(?:\d{4,}|\d{4}\/\d{2}|\/p\/|\/post\/|\/posts\/|\/article\/|\/articles\/)/i.test(pathname);
+  return /(?:\d{4,}|\d{4}\/\d{2}|\/p\/|\/post\/|\/posts\/|\/article\/|\/articles\/)/i.test(
+    pathname,
+  );
 }
 
 function formatLlmsLink(page: LlmsTxtPage) {
@@ -562,8 +686,12 @@ function buildLlmsFullTxt(state: CrawlState & { siteName: string }) {
   const sitemapUrl = new URL("/sitemap.xml", state.rootUrl).toString();
   const pageInventory = state.pages
     .map((page, index) => {
-      const headings = page.headings.length ? `\n  - Headings: ${page.headings.join("; ")}` : "";
-      const description = page.description ? `\n  - Summary: ${page.description}` : "";
+      const headings = page.headings.length
+        ? `\n  - Headings: ${page.headings.join("; ")}`
+        : "";
+      const description = page.description
+        ? `\n  - Summary: ${page.description}`
+        : "";
       return `${index + 1}. [${page.title}](${page.url})${description}${headings}`;
     })
     .join("\n\n");

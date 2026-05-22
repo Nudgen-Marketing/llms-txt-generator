@@ -1,0 +1,67 @@
+name: Release Extensions
+
+on:
+  release:
+    types: [published, created]
+  workflow_dispatch:
+
+jobs:
+  build-release-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release tag matches package version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          RELEASE_TAG="${GITHUB_REF_NAME}"
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+          if [ "${RELEASE_TAG}" != "${EXPECTED_TAG}" ]; then
+            echo "Release tag ${RELEASE_TAG} does not match package version ${PACKAGE_VERSION}"
+            exit 1
+          fi
+
+      - name: Run tests and typecheck
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Build browser targets
+        run: npm run build:all
+
+      - name: Verify generated manifest versions
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          for target in chrome edge firefox; do
+            MANIFEST_VERSION=$(node -p "require('./dist/${target}/manifest.json').version")
+            if [ "${MANIFEST_VERSION}" != "${PACKAGE_VERSION}" ]; then
+              echo "Manifest version mismatch for ${target}: ${MANIFEST_VERSION}"
+              exit 1
+            fi
+          done
+
+      - name: Package release zips
+        run: node scripts/package-extensions.mjs
+
+      - name: Validate packaged release zips
+        run: npm run validate:artifacts
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
