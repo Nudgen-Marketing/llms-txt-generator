@@ -9,6 +9,13 @@ export type CrawlProgress = {
   result?: LlmsTxtGeneratorResult;
 };
 
+// Set uninstall URL on installation or update
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.runtime.setUninstallURL("https://nudgen.net/").catch((err) => {
+    console.error("Failed to set uninstall URL:", err);
+  });
+});
+
 // Listen for messages from popup or page contexts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "check_llms_files") {
