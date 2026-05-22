@@ -1,0 +1,30 @@
+{
+  "name": "llms-txt-generator",
+  "version": "1.0.0",
+  "description": "Chrome Extension to check for and generate llms.txt and llms-full.txt files on websites.",
+  "author": {
+    "name": "Nudgen",
+    "email": "contact@nudgen.net",
+    "url": "https://nudgen.net"
+  },
+  "scripts": {
+    "build": "npm run build:all",
+    "build:chrome": "node scripts/build-extension.mjs --target=chrome",
+    "build:edge": "node scripts/build-extension.mjs --target=edge",
+    "build:firefox": "node scripts/build-extension.mjs --target=firefox",
+    "build:all": "npm run build:chrome && npm run build:edge && npm run build:firefox",
+    "dev": "node scripts/build-extension.mjs --target=chrome --watch",
+    "package:chrome": "npm run build:chrome && node scripts/package-extensions.mjs --target=chrome",
+    "package:all": "npm run build:all && node scripts/package-extensions.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.38",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "preact": "^10.29.0"
+  }
+}
