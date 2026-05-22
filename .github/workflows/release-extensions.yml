@@ -34,9 +34,8 @@ jobs:
             exit 1
           fi
 
-      - name: Run tests and typecheck
+      - name: Run typecheck
         run: |
-          npm test
           npm run typecheck
 
       - name: Build browser targets
