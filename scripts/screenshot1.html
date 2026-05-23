@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Screenshot 1 - Check & Discover</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      width: 1280px;
+      height: 800px;
+      background-color: #050814;
+      background-image: 
+        radial-gradient(circle at 85% 15%, rgba(6, 182, 212, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 90px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Glow effect in background */
+    .glow-orb {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(50px);
+      pointer-events: none;
+    }
+
+    .info-panel {
+      max-width: 480px;
+      z-index: 10;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      color: #22d3ee;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 54px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin: 0 0 16px 0;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin: 0 0 40px 0;
+    }
+
+    .features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .feature-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature-icon svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 3;
+    }
+
+    .feature-text {
+      font-size: 16px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .feature-title {
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+
+    /* Mockup container */
+    .mockup-container {
+      position: relative;
+      z-index: 10;
+      perspective: 1000px;
+    }
+
+    .browser-mockup {
+      width: 500px;
+      background: #0b0f19;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 0.8),
+        0 0 50px rgba(6, 182, 212, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: rotateY(-8deg) rotateX(4deg);
+      transition: transform 0.5s ease;
+    }
+
+    .browser-header {
+      height: 42px;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 8px;
+      margin-right: 24px;
+    }
+
+    .control-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-close { background: #ef4444; }
+    .dot-minimize { background: #f59e0b; }
+    .dot-maximize { background: #10b981; }
+
+    .address-bar {
+      background: #020617;
+      color: #64748b;
+      font-size: 12px;
+      padding: 5px 16px;
+      border-radius: 8px;
+      flex-grow: 1;
+      text-align: left;
+      font-family: monospace;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .address-bar::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .browser-content {
+      background: #040912;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .browser-content img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb"></div>
+  
+  <div class="info-panel">
+    <div class="badge">llms.txt Checker</div>
+    <h1>Instant Discovery</h1>
+    <p class="subtitle">Quickly detect standard index files on any website to see if they are ready for LLM search agents.</p>
+    
+    <div class="features-list">
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="feature-text">
+          <div class="feature-title">Verify in Real-Time</div>
+          Inspects active tabs automatically for standard `/llms.txt` and `/llms-full.txt` paths.
+        </div>
+      </div>
+      
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="feature-text">
+          <div class="feature-title">Clear Status Badges</div>
+          Instantly flags files as missing or displays them in green if found.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="feature-text">
+          <div class="feature-title">Client-Side Checking</div>
+          All checks occur purely inside your browser context. No external tracking or servers.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-container">
+    <div class="browser-mockup">
+      <div class="browser-header">
+        <div class="window-controls">
+          <div class="control-dot dot-close"></div>
+          <div class="control-dot dot-minimize"></div>
+          <div class="control-dot dot-maximize"></div>
+        </div>
+        <div class="address-bar">springhill.com.vn</div>
+      </div>
+      <div class="browser-content">
+        <img src="../assets/cropped_scan.png" alt="Extension Scan State">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
