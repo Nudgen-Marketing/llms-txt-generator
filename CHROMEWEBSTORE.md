@@ -32,6 +32,9 @@ Chrome, Edge, and Firefox developer panels require clear justifications for broa
    - **Required for**: Persisting the active crawler state across background worker lifecycles.
    - **Justification**: Chrome's Manifest V3 background service workers are ephemeral and can sleep. The storage API (`chrome.storage.session`) is used to save crawled pages and active progress so that if the service worker terminates during a crawl, the progress state is preserved and restored when the popup is opened.
 
+4. **Permissions Audit & Compliance**:
+   - **Audited and Removed**: The **`scripting`** permission has been fully removed from [manifest.json](file:///Users/mac/Projects/llms-txt-generator/manifest.json). The helper function wrappers associated with scripting injection were audited and removed, as the extension operates purely via client-side fetch requests and does not inject scripts or modify web page content. This ensures full compliance with the Chrome Web Store Minimal Permissions Policy.
+
 ---
 
 ## Privacy Policy Statement
