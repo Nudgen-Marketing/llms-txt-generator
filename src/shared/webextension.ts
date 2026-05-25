@@ -79,25 +79,6 @@ export async function getTab(tabId: number): Promise<chrome.tabs.Tab> {
   });
 }
 
-export async function executeScript(
-  details: Parameters<typeof chrome.scripting.executeScript>[0],
-): Promise<chrome.scripting.InjectionResult<unknown>[] | void> {
-  const api = getExtensionApi();
-  if (usesBrowserNamespace()) {
-    return api.scripting.executeScript(details);
-  }
-
-  return new Promise((resolve, reject) => {
-    api.scripting.executeScript(details, (results) => {
-      const lastError = chrome.runtime.lastError;
-      if (lastError) {
-        reject(new Error(lastError.message));
-        return;
-      }
-      resolve(results);
-    });
-  });
-}
 
 export async function storageGet<T>(key: string): Promise<T | undefined> {
   const api = getExtensionApi();

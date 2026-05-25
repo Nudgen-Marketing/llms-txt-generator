@@ -87,5 +87,7 @@ The build uses a customized esbuild config ([esbuild.config.mjs](file:///Users/m
 
 * **No Node/Server Modules**: All shared code must execute in standard web browser contexts (both popup main thread and background worker service thread). Avoid Node-specific globals (`process`, `Buffer`) or file system/net APIs.
 * **Safety First**: Do not modify or relax the URL validator in [src/shared/url-validation.ts](file:///Users/mac/Projects/llms-txt-generator/src/shared/url-validation.ts) without extreme precaution. It blocks access to local ports or metadata endpoints (e.g. `169.254.169.254`) that would introduce security vulnerabilities.
+* **Minimal Permissions Policy**: Do not request permissions that are not actively used by the extension. In compliance with the Chrome Web Store policy, the `scripting` permission and its associated wrapper functions in [src/shared/webextension.ts](file:///Users/mac/Projects/llms-txt-generator/src/shared/webextension.ts) have been removed. The extension only uses `"activeTab"`, `"storage"`, and `"host_permissions"` (`http://*/*`, `https://*/*`).
 * **Keep Clean Header Banners**: Keep the header template script in [scripts/build-extension.mjs](file:///Users/mac/Projects/llms-txt-generator/scripts/build-extension.mjs) intact; it marks built files with target-specific markers.
 * **Pre-Commit Checks**: Always run `npm run typecheck` and `npm run package:all` before completing a task to verify bundle validity.
+

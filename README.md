@@ -134,6 +134,18 @@ npm install
 
 ---
 
+## Security & Permissions
+
+This extension is designed to respect user privacy and adhere to the Chrome Web Store's Minimal Permissions Policy, requesting only the absolute narrowest permissions required:
+
+* **`host_permissions` (`http://*/*`, `https://*/*`)**: Needed to check the presence of `/llms.txt` and `/llms-full.txt` files and crawl web pages client-side to generate directories for any URL entered by the user.
+* **`activeTab`**: Used to obtain the active tab's URL upon opening the popup, allowing the UI to pre-populate the target website domain for a smoother user experience.
+* **`storage`**: Used to persist active crawler state and progress across ephemeral service worker background lifecycles (`chrome.storage.session`).
+
+No personal data, browser history, or page contents are sent to remote servers; all processing is executed 100% client-side in the user's browser.
+
+---
+
 ## License & Support
 
 Developed by [Nudgen](https://nudgen.net). For inquiries, support, or security notifications, please contact [contact@nudgen.net](mailto:contact@nudgen.net).
